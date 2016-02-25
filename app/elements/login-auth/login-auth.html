@@ -1,0 +1,150 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/firebase-element/firebase-auth.html">
+<link rel="import" href="../../bower_components/firebase-element/firebase-document.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/iron-form/iron-form.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">
+
+<style>
+.close-form { float: right; }
+</style>
+
+<dom-module id="login-auth">
+  <template>
+    <paper-button raised on-tap="logout" hidden$="{{!loggedIn}}"> Logout </paper-button>
+    <paper-button raised on-tap="showLoginForm" hidden$="{{loggedIn}}"> Login </paper-button>
+
+    <div id="login-container" hidden$="{{!enteringLogin}}">
+      <iron-icon icon="close" class="close-form" on-tap="hideForms"></iron-icon>
+      <form is="iron-form" id="loginForm">
+        <paper-input name="email" type="email" label="Email"></paper-input>
+        <paper-input name="password" type="password" label="Password"></paper-input>
+        <button type="submit">Login</button>
+      </form>
+      <p>Don't have an account?</p><button on-tap="showAddUserForm">Create New Account</button>
+    </div>
+
+    <div id="add-user-container" hidden$="{{!addingUser}}">
+      <iron-icon icon="close" class="close-form" on-tap="hideForms"></iron-icon>
+      <form is="iron-form" id="addUserForm">
+        <paper-input name="email" type="email" label="Email"></paper-input>
+        <paper-input name="password" type="password" label="Password"></paper-input>
+        <button type="submit">Create This Account</button>
+      </form>
+    </div>
+  </template>
+</dom-module>
+
+<script>
+  (function () {
+    'use strict'
+    var ref = new Firebase('https://craft-polymer-app.firebaseio.com');
+
+    Polymer({
+      is: 'login-auth',
+
+      created: function() {
+        var token = localStorage.getItem('craft-token');
+        var authElement = this;
+
+        if (token) {
+          
+          ref.authWithCustomToken(token, function(error, authData) {
+            if (error) {
+              console.log('login failed, error: ' + error);
+            } else {
+              //loginHandler(authData.uid);
+              authElement.loggedIn = true;
+              console.log('user with uid ' + authData.uid + ' is now logged in');
+            }
+            
+          });
+
+        }
+      },
+
+      properties: {
+        loggedIn: {
+          type: Boolean, 
+          value: false,
+          notify: true
+        },
+        addingUser: {
+          type: Boolean, 
+          value: false,
+          notify: true
+        },
+        enteringLogin: {
+          type: Boolean, 
+          value: false,
+          notify: true
+        }
+      },
+
+      listeners: {
+        'addUserForm.submit' : 'addUser',
+        'loginForm.submit' : 'loginWithEmail'
+      },
+
+      addUser: function(e) {
+        e.preventDefault();
+        var authElement = this;
+        var newUser = addUserForm.serialize();
+        
+        ref.createUser(newUser, function(error, userData) {
+          if (error) {
+            console.log('error with adding user: ' + error);
+          } else {
+            console.log('new user uid: ' + userData.uid);
+
+            addUserForm.reset();
+            authElement.addingUser = false;
+            authElement.enteringLogin = true;
+          }
+        });
+      },
+      
+      loginWithEmail: function(e) {
+        e.preventDefault();
+        var authElement = this;
+        var userInfo = loginForm.serialize();
+
+        ref.authWithPassword(userInfo, function(error, authData) {
+          if (error) {
+            console.log('login failed, error: ' + error);
+          } else {
+            console.log('user with uid ' + authData.uid + ' is now logged in');
+            localStorage.setItem('craft-token', authData.token);
+
+            loginForm.reset();
+            authElement.loggedIn = true;
+            authElement.enteringLogin = false;
+          }
+        });
+      },
+
+      showLoginForm: function() {
+        this.enteringLogin = true;
+        this.addingUser = false;
+      },
+
+      showAddUserForm: function() {
+        this.addingUser = true;
+        this.enteringLogin = false;
+      },
+
+      hideForms: function() {
+        this.enteringLogin = false;
+        this.addingUser = false;
+      },
+      
+      logout: function() {
+        ref.unauth();
+        localStorage.removeItem('craft-token');
+        this.loggedIn = false;
+        console.log('logging out');
+      }
+    })
+
+  })()
+</script>
