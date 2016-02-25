@@ -1,0 +1,119 @@
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<!--<link rel="import" href="../../bower_components/firebase-element/firebase-document.html">-->
+
+
+<dom-module id="todo-item">
+
+
+
+
+  <template>
+
+    <!--<firebase-document-->
+      <!--location="https://polymerstarterkitone.firebaseio.com/items"-->
+      <!--data="{{fbItems}}">-->
+    <!--</firebase-document>-->
+
+
+    <!-- TAKE FB DATA FROM MAIN PAGE AND PASS IT INTO TEMPLATE-->
+    <template is="dom-repeat" items="[[ items ]]" as="item">
+      <div>[[ item.name ]]</div>
+      <div>[[ item.description ]]</div>
+      <a href="[[item.url]]">this is the current params.name = [[routeParams.name]]</a>
+      <div>this is an td item</div>
+    </template>
+
+    <!--TAKE PARAMS DATA FROM MAIN PAGE-->
+
+
+    <div> routeParams name is [[routeParams.name]] !</div>
+
+    <div> The CurrentItem.name is [[currentItem.name]] !</div>
+
+
+
+
+  </template>
+  <script>
+  (function() {
+    'use strict';
+
+    Polymer({
+
+      currentItem:  null,
+
+      is: 'todo-item',
+
+
+
+      properties: {
+        routeParams: {
+          type: Object,
+          observer: '_routeParamsChanged'
+        },
+        items: {
+          type: Array,
+          observer: '_itemsUpdated',
+          value: function() { return []; }
+        }
+      },
+      ready: function() {
+
+        console.log("todo-item ready!");
+        console.log(this);
+        //this._myFunction();
+
+
+      },
+
+      _routeParamsChanged: function(newValue) {
+        console.log('route params: ', newValue);
+        this.routeParams = newValue;
+        //console.log('fb: ', items);
+        //return newValue.name;
+
+      },
+
+      _myFunction: function () {
+          console.log("myfunc");
+      },
+
+      _getCurrentItem:function () {
+        if (this.items) {
+          for (var i = 0, len = this.items.length; i < len; i++) {
+            console.log("get current item : " + this.routeParams.name)
+            var theItem = this.items[i];
+            if (theItem.name == this.routeParams.name) {
+              this.currentItem = theItem;
+              console.log("Match: ", this.currentItem.name);
+              //return this.currentItem;
+            }
+          }
+        } else {
+          this._myFunction();
+        }
+
+      },
+
+      _itemsUpdated: function (items) {
+        console.log('fb: ', items);
+        this.items = items;
+        this._getCurrentItem();
+      }
+
+
+    });
+  })();
+  </script>
+</dom-module>
+

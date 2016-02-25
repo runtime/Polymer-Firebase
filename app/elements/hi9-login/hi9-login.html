@@ -1,0 +1,239 @@
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<!--<link rel="import" href="../../bower_components/polymer/polymer.html">-->
+
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/firebase-element/firebase-auth.html">
+<link rel="import" href="../../bower_components/firebase-element/firebase-document.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<!--
+[![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat)](http://standardjs.com/)
+@demo https://hi9.uk/
+-->
+<dom-module id="hi9-login">
+  <template>
+    <firebase-auth id="firebaseLogin" user="{{user}}" status-known="{{statusKnown}}" location="https://polymerstarterkitone.firebaseio.com" provider="password" on-error="errorHandler" on-user-created="userSuccessHandler" on-password-changed="userSuccessHandler" on-password-reset="userSuccessHandler" params="{{params}}" on-user-removed="userSuccessHandler"></firebase-auth>
+    <firebase-document location="https://polymerstarterkitone.firebaseio.com/data" id="firebaseDocument"></firebase-document>
+
+    <paper-button raised on-tap="logout" hidden$="{{computeLogoutHidden(statusKnown, user)}}"> Logout </paper-button>
+    <paper-button raised on-tap="login" hidden$="{{computeLoginHidden(statusKnown, user)}}"> Login </paper-button>
+  </template>
+</dom-module>
+<script>
+  (function () {
+    'use strict'
+    Polymer({
+      is: 'hi9-login',
+      properties: {
+        params: {
+          type: Object,
+          value: {scope: 'email'}
+        },
+        provider: {
+          type: String, value: 'anonymous'
+        },
+        message: {
+          type: String, value: ''
+        },
+        email: {
+          type: String, value: ''
+        },
+        password: {
+          type: String, value: ''
+        },
+        user: {
+          type: Object, value: null,
+          notify: true
+        },
+        uid: {
+          computed: 'returnVal(user.uid)'
+        },
+        owner: {
+          computed: 'returnVal(user.owner)'
+        },
+        userData: {
+          type: Object, notify: true
+        },
+        userDataUrl: {
+          computed: 'getUserDataUrl(uid)'
+        },
+        ownerDataUrl: {
+          computed: 'getOwnerDataUrl(owner, uid)'
+        },
+        statusKnown: {
+          type: Boolean
+        },
+        show_model: {
+          type: Boolean, notify: true,
+          computed: 'computeLogoutHidden(statusKnown, user)'
+        },
+        role: {
+          computed: 'getRole(user,userData)',
+          notify: true
+        },
+        admin: {
+          computed: 'isAdmin(role)',
+          notify: true
+        }
+      },
+      returnVal: function (val) {
+        if (val !== undefined && val !== null) {
+          return val
+        } else {
+          return undefined
+        }
+      },
+      login: function () {
+        var params
+        try {
+          params = JSON.parse(this.params)
+        } catch (e) {
+          params = null
+        }
+        if (this.provider === 'password') {
+          params = params || {}
+          params.email = this.email
+          params.password = this.password
+          console.log(params);
+          debugger;
+
+        }
+       // console.log(params);
+        this.$.firebaseLogin.login({email: "erik.kroha@gmail.com", password: "12345"})
+        this.log('Login')
+      },
+      logout: function () {
+        this.log('Logout')
+        this.$.firebaseLogin.logout()
+      },
+      errorHandler: function (e) {
+        this.log('Login Status')
+        this.message = 'Error: ' + e.detail.message
+      },
+      userSuccessHandler: function (e) {
+        this.message = e.type + ' success!'
+      },
+      createUserHandler: function (e) {
+        this.$.firebaseLogin.createUser(this.email, this.password)
+      },
+      changePasswordHandler: function (e) {
+        this.$.firebaseLogin.changePassword(this.email, this.password, this.newPassword)
+      },
+      resetPasswordHandler: function (e) {
+        this.$.firebaseLogin.sendPasswordResetEmail(this.email)
+      },
+      computePasswordHidden: function (provider) {
+        return provider !== 'password'
+      },
+      computeCreateUserDisabled: function (email, password) {
+        return !email || !password
+      },
+      computeChangePasswordDisabled: function (email, password, newPassword) {
+        return !email || !password || !newPassword
+      },
+      computeResetPasswordDisabled: function (email, password) {
+        return !email || !password
+      },
+      computeRemoveUserDisabled: function (email, password) {
+        return !email || !password
+      },
+      computeLoginHidden: function (statusKnown, user) {
+        return !statusKnown || !!user
+      },
+      computeLogoutHidden: function (statusKnown, user) {
+        return !statusKnown || !user
+      },
+      computeLoginStatus: function (statusKnown, user) {
+        var d = new Date()
+        var n = d.getTime()
+        this.log('Login Status')
+        if (statusKnown && user) {
+          return 'Logged in'
+        }
+        if (statusKnown) {
+          return 'Logged out'
+        }
+        return 'Unknown (checking status...)'
+      },
+      log: function (log) {
+        var d = new Date()
+        var n = d.getTime()
+        this.$.firebaseDocument.query.ref().push({log: log, time: n, user: this.user})
+      },
+      getRole: function (user, userData) {
+        if (userData !== undefined && userData !== null && user !== null) {
+          if (this.userSet === undefined && userData.owner === undefined) { // Stops Looping.
+            this.userSet = true
+            if (userData.num === undefined) {
+              userData.num = prompt('Hi ' + user.google.displayName + '\nPlease tell me your mobile phone number?', '07')
+            }
+            if (userData.owner === undefined) {
+              userData.owner = prompt('What is your housing association?', 'Yarlington')
+            }
+            if (userData.email === undefined) {
+              userData.email = prompt('and lastly you email address?', '')
+            }
+            if (userData.log === undefined) {
+              var d = new Date()
+              var n = d.getTime()
+              userData.log = [{first: n}]
+            }
+            userData.user = user
+            this.userData = clone(userData)
+            // this.ownerData = clone(userData)
+          }
+          // user
+          if (!userData.hasOwnProperty('role')) {
+            userData.role = 'User'
+          }
+          this.data = userData
+          return userData.role
+        } else {
+          return 'no data'
+        }
+      },
+      getUserDataUrl: function (uid) {
+        return 'https://polymerstarterkitone.firebaseio.com/users/' + uid
+      },
+      isAdmin: function (role) {
+        return role === 'admin'
+      }
+    })
+    function clone (obj) {
+      var copy
+      // Handle the 3 simple types, and null or undefined
+      if (obj === null || typeof obj !== 'object') return obj
+      // Handle Date
+      if (obj instanceof Date) {
+        copy = new Date()
+        copy.setTime(obj.getTime())
+        return copy
+      }
+      // Handle Array
+      if (obj instanceof Array) {
+        copy = []
+        for (var i = 0, len = obj.length; i < len; i++) {
+          copy[i] = clone(obj[i])
+        }
+        return copy
+      }
+      // Handle Object
+      if (obj instanceof Object) {
+        copy = {}
+        for (var attr in obj) {
+          if (obj.hasOwnProperty(attr)) copy[attr] = clone(obj[attr])
+        }
+        return copy
+      }
+      throw new Error("Unable to copy obj! Its type isn't supported.")
+    }
+  })()
+</script>
