@@ -1,5 +1,5 @@
 {
-  "firebase": "polymerstarterkitone",
+  "firebase": "craft-polymer-app",
   "public": "dist",
   "ignore": [
     "firebase.json",

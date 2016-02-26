@@ -40,9 +40,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
     <div> The CurrentItem.name is [[currentItem.name]] !</div>
 
-
-
-
   </template>
   <script>
   (function() {
@@ -50,11 +47,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
     Polymer({
 
-      currentItem:  null,
-
       is: 'todo-item',
-
-
 
       properties: {
         routeParams: {
@@ -65,52 +58,43 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           type: Array,
           observer: '_itemsUpdated',
           value: function() { return []; }
+        },
+        currentItem: {
+          type: Object,
+          value: null
         }
       },
+
       ready: function() {
-
-        console.log("todo-item ready!");
-        console.log(this);
-        //this._myFunction();
-
-
+        this._getCurrentItem();
       },
 
       _routeParamsChanged: function(newValue) {
         console.log('route params: ', newValue);
         this.routeParams = newValue;
-        //console.log('fb: ', items);
-        //return newValue.name;
 
-      },
-
-      _myFunction: function () {
-          console.log("myfunc");
+        this._getCurrentItem();
       },
 
       _getCurrentItem:function () {
-        if (this.items) {
-          for (var i = 0, len = this.items.length; i < len; i++) {
-            console.log("get current item : " + this.routeParams.name)
-            var theItem = this.items[i];
-            if (theItem.name == this.routeParams.name) {
-              this.currentItem = theItem;
-              console.log("Match: ", this.currentItem.name);
-              //return this.currentItem;
-            }
-          }
-        } else {
-          this._myFunction();
-        }
+        var containerElem = this;
 
+        if (this.items) {
+          this.items.forEach( function(item) {
+            if (item.name == containerElem.routeParams.name) {
+              containerElem.currentItem = item;
+            }
+          });
+        } else {
+          containerElem.currentItem = null;
+        }
       },
 
       _itemsUpdated: function (items) {
-        console.log('fb: ', items);
+        //console.log('fb: ', items);
         this.items = items;
         this._getCurrentItem();
       }
-
 
     });
   })();
